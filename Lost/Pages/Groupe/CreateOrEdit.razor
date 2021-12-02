@@ -1,0 +1,73 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.GroupeCreateOrEdit)]
+@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.GroupeCreateOrEdit + "/{Id:long}")]
+
+@inject IGroupeService GroupeService
+@inject NavigationManager NavManager
+@inject IJSRuntime jsRuntime
+@inject NotifierTitleService NotifierTitle
+
+    <div class="box-create">
+        <EditForm Model="@groupeViewModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <div class="mat-layout-grid">
+                <div class="mat-layout-grid-inner">
+                    <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+
+                        <p>
+                            <MatTextField Label="Nom" @bind-Value="@groupeViewModel.Nom" FullWidth="true" />
+                            <ValidationMessage For="@(() => groupeViewModel.Nom)" />
+                        </p>
+                        <p>
+                            <MatBlazor.MatCheckbox Label="Groupe Cartel" @bind-Value="@groupeViewModel.IsGroupeCartel" Style="display: table-cell; vertical-align: middle;" FullWidth="true" />
+                        </p>
+                        <p>
+                            <MatTextField Label="Valeur billet (en %)" @bind-Value="@groupeViewModel.TauxBlanchimentViewModel.ValeurBillet" FullWidth="true" />
+                            <ValidationMessage For="@(() => groupeViewModel.TauxBlanchimentViewModel.ValeurBillet)" />
+                        </p>
+                        <p>
+                            <MatTextField Label="Valeur sac (en $)" @bind-Value="@groupeViewModel.TauxBlanchimentViewModel.ValeurSac" FullWidth="true" />
+                            <ValidationMessage For="@(() => groupeViewModel.TauxBlanchimentViewModel.ValeurSac)" />
+                        </p>
+                        <p>
+                            <MatTextField Label="Valeur voiture (en $)" @bind-Value="@groupeViewModel.TauxBlanchimentViewModel.ValeurVoiture" FullWidth="true" />
+                            <ValidationMessage For="@(() => groupeViewModel.TauxBlanchimentViewModel.ValeurVoiture)" />
+                        </p>
+                        <MatButton Class="save" Type="submit" Raised="true" Icon="done">Valider</MatButton>
+                        <MatButton Class="cancel" Type="button" Outlined="true" OnClick="@Cancel" Icon="clear">Annuler</MatButton>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+
+    @code {
+        [Parameter]
+        public long Id { get; set; }
+
+        private GroupeViewModel groupeViewModel = new GroupeViewModel();
+
+
+        protected override async Task OnInitializedAsync()
+        {
+            await NotifierTitle.Update(Lost.SharedLib.Constants.TitleGroupeCreateOrEdit);
+
+            if (Id > 0)
+            {
+                groupeViewModel = await GroupeService.GetAsync(Id);
+            }
+        }
+
+
+        private void HandleValidSubmit()
+        {
+            Task.Run(async () => await GroupeService.AddOrUpdateAsync(groupeViewModel)).Wait();
+
+            NavManager.NavigateTo(ConstantsUrl.GroupeIndex);
+
+        }
+
+        public void Cancel()
+        {
+            NavManager.NavigateTo(ConstantsUrl.GroupeIndex);
+        }
+    }

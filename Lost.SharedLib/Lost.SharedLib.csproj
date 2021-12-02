@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lost.DataAccess\Lost.DataAccess.csproj" />
+    <ProjectReference Include="..\Lost.Model\Lost.Model.csproj" />
+  </ItemGroup>
+
+</Project>

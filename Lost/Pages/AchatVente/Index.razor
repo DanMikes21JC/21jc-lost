@@ -1,0 +1,116 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.AchatVenteIndex)]
+@inject IAchatVenteService AchatVenteService
+@inject ISemaineService SemaineService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+@if (achatVenteViewModel == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <Confirm @ref="deleteConfirmation"
+             ConfirmationChanged="ConfirmDelete_Click"
+             ConfirmationMessage=@($"Êtes-vous sûr de vouloir supprimer cette transaction ?")
+             UnableMessage=@($"")>
+    </Confirm>
+
+    <RadzenDropDown Data="semaineViewModelList"
+                    @bind-Value=@semaineViewModelSelected
+                    AllowClear="true"
+                    AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    TextProperty="Libelle"
+                    Placeholder="Semaine"
+                    Change="SemaineChange">
+    </RadzenDropDown>
+
+    <MatButton Icon="add" Raised="true" Class="mb-3 float-right" @onclick="RedirectToCreate">Achat / Vente</MatButton>
+
+    <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="AchatVenteViewModel" Items="achatVenteViewModel" PageSize="12">
+        <BlazorTable.Column TableItem="AchatVenteViewModel" Title="Date" Field="@(x => x.Date)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="AchatVenteViewModel" Title="De" Field="@(x => x.From)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="AchatVenteViewModel" Title="Description" Field="@(x => x.Description)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="AchatVenteViewModel" Title="Bénéfice" Field="@(x => x.Benefice)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="AchatVenteViewModel" Title="Actions" Width="10%">
+            <Template Context="tableContext">
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="create" @onclick="@(() => RedirectToEdit(tableContext.Id))"></MatIconButton>
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="delete" @onclick="@(() => RedirectToDelete(tableContext))"></MatIconButton>
+            </Template>
+        </BlazorTable.Column>
+        <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </BlazorTable.Table>
+}
+
+@code {
+    private AchatVenteViewModel[] achatVenteViewModel;
+    private AchatVenteViewModel achatVenteViewModelDelete;
+
+    private SemaineViewModel[] semaineViewModelList;
+    private SemaineViewModel semaineViewModelSelected;
+
+    private AchatVenteViewModel[] allAchatVenteViewModel;
+
+
+    protected ConfirmBase deleteConfirmation { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleAchatVenteIndex);
+
+        achatVenteViewModelDelete = new AchatVenteViewModel();
+        allAchatVenteViewModel = await AchatVenteService.GetAllAsync();
+        allAchatVenteViewModel = allAchatVenteViewModel.OrderByDescending(v => v.Date).ToArray();
+        achatVenteViewModel = allAchatVenteViewModel;
+        semaineViewModelList = await SemaineService.GetAllAsync();
+        semaineViewModelSelected = semaineViewModelList.Last();
+        semaineViewModelList = semaineViewModelList.OrderByDescending(s => s.Num).ToArray();
+        SemaineChange();
+    }
+
+    protected void RedirectToCreate()
+    {
+        NavManager.NavigateTo(ConstantsUrl.AchatVenteCreateOrEdit);
+    }
+
+    protected void RedirectToEdit(long id)
+    {
+        NavManager.NavigateTo(ConstantsUrl.AchatVenteCreateOrEdit + "/" + id);
+    }
+
+    protected async Task RedirectToDelete(AchatVenteViewModel viewModel)
+    {
+        achatVenteViewModelDelete = viewModel;
+        bool canBeDeleted = await AchatVenteService.CanBeDeleted(viewModel.Id);
+        if (canBeDeleted)
+        {
+            deleteConfirmation.Show();
+        }
+        else
+        {
+            deleteConfirmation.ShowUnableDelete();
+        }
+    }
+
+    protected async Task ConfirmDelete_Click(bool deleteConfirmed)
+    {
+        if (deleteConfirmed)
+        {
+            await AchatVenteService.DeleteAsync(achatVenteViewModelDelete.Id);
+            achatVenteViewModel = await AchatVenteService.GetAllAsync();
+        }
+    }
+
+    private void SemaineChange()
+    {
+        if(semaineViewModelSelected == null)
+        {
+            achatVenteViewModel = allAchatVenteViewModel;
+        }
+        else
+        {
+            achatVenteViewModel = allAchatVenteViewModel.Where(t => t.SemaineViewModel.Id == semaineViewModelSelected.Id).ToArray();
+        }
+    }
+}

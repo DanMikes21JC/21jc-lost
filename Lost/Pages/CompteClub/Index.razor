@@ -1,0 +1,112 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.CompteClubIndex)]
+@inject ICompteClubTransactionService CompteClubTransactionService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+@if (compteClubFormulaireViewModel == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <div class="mat-layout-grid">
+        <div class="mat-layout-grid-inner">
+            <div class="mat-layout-grid-cell mat-layout-grid-cell-span-6">
+                <p>
+                    <h1>Compte Club : @compteClubFormulaireViewModel.Sum(c => c.Somme).ToString("#,0")</h1>
+
+                    <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="CompteClubFormulaireViewModel" Items="compteClubFormulaireLastViewModel" PageSize="10">
+                        <BlazorTable.Column TableItem="CompteClubFormulaireViewModel" Title="Nom" Field="@(x => x.PersonneViewModel.Nom)" Sortable="true" Filterable="true" Width="15%" />
+                        <BlazorTable.Column TableItem="CompteClubFormulaireViewModel" Title="Somme" Field="@(x => x.SommeString)" Sortable="true" Filterable="true" Width="20%" />
+                        <BlazorTable.Column TableItem="CompteClubFormulaireViewModel" Title="Raison" Field="@(x => x.Raison)" Sortable="true" Filterable="true" Width="20%" />
+                    </BlazorTable.Table>
+                </p>
+            </div>
+
+            <div class="mat-layout-grid-cell mat-layout-grid-cell-span-6">
+                <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="CompteClubArgentClubViewModel" Items="compteClubArgentClubViewModel" PageSize="10">
+                    <BlazorTable.Column TableItem="CompteClubArgentClubViewModel" Title="Nom" Field="@(x => x.Nom)" Sortable="true" Filterable="true" Width="15%" />
+                    <BlazorTable.Column TableItem="CompteClubArgentClubViewModel" Title="Total du club sur le compte" Field="@(x => x.TotalString)" Sortable="true" Filterable="true" Width="20%" />
+                </BlazorTable.Table>
+            </div>
+        </div>
+    </div>
+
+}
+
+@code {
+
+    private CompteClubFormulaireViewModel[] compteClubFormulaireViewModel;
+
+    private CompteClubFormulaireViewModel[] compteClubFormulaireLastViewModel;
+
+    private CompteClubArgentClubViewModel[] compteClubArgentClubViewModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleTransactionIndex);
+
+        compteClubFormulaireViewModel = await CompteClubTransactionService.GetAllAsync();
+        compteClubFormulaireLastViewModel = compteClubFormulaireViewModel.Skip(compteClubFormulaireViewModel.Length - 10).Take(10).ToArray();
+
+        var personnes = compteClubFormulaireViewModel.Select(c => c.PersonneViewModel.Nom).Distinct();
+        List<CompteClubArgentClubViewModel> compteClubArgentClubViewModelList = new List<CompteClubArgentClubViewModel>();
+        foreach (string name in personnes)
+        {
+            CompteClubArgentClubViewModel compteClubArgentClubViewModelPersonne = new CompteClubArgentClubViewModel();
+            compteClubArgentClubViewModelPersonne.Nom = name;
+            compteClubArgentClubViewModelPersonne.Total = 0;
+            compteClubArgentClubViewModelList.Add(compteClubArgentClubViewModelPersonne);
+        }
+
+        foreach (CompteClubFormulaireViewModel compteClubFormulaireViewModel in compteClubFormulaireViewModel)
+        {
+            switch (compteClubFormulaireViewModel.Raison)
+            {
+                case "Récupération Blanchisserie":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total += compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Don A <- B (Transfert compte club B de A)":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Réception B -> A (Réception compte club B de A)":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total += compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment Mano":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment Verts":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment Zetas":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment Ballas":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment Vagos":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment Non Cartel":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Blanchiment PM":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Paiement Fredo":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Perte ou amende":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+                case "Ajustement Compte":
+                    break;
+                case "Paie Des Membres":
+                    compteClubArgentClubViewModelList.First(c => c.Nom == compteClubFormulaireViewModel.PersonneViewModel.Nom).Total -= compteClubFormulaireViewModel.Somme;
+                    break;
+            }
+        }
+
+        compteClubArgentClubViewModel = compteClubArgentClubViewModelList.ToArray();
+    }
+}

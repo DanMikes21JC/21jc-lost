@@ -1,0 +1,96 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.CompteClubFormulaire)]
+
+@inject IPersonneService PersonneService
+@inject ICompteClubTransactionService CompteClubTransactionService
+@inject NavigationManager NavManager
+@inject IJSRuntime jsRuntime
+@inject NotifierTitleService NotifierTitle
+
+<div class="box-create">
+    <EditForm Model="@compteClubFormulaireViewModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="mat-layout-grid">
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+
+                    <p>
+                        <RadzenLabel Text="Qui ?" Style="width:100%" />
+                        <RadzenDropDown Data="personneViewModelList"
+                                        @bind-Value=@compteClubFormulaireViewModel.PersonneViewModel
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        Style="width:100%"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        TextProperty="Nom">
+                        </RadzenDropDown>
+                    </p>
+
+                    <p>
+                        <MatTextField Label="Somme (- si donner, + si reçu)" @bind-Value="@compteClubFormulaireViewModel.Somme" FullWidth="true" />
+                        <ValidationMessage For="@(() => compteClubFormulaireViewModel.Somme)" />
+                    </p>
+
+                    <p>
+                        <RadzenLabel Text="Raison de la transaction ?" Style="width:100%" />
+                        <RadzenDropDown Data="raisonList"
+                                        @bind-Value=@compteClubFormulaireViewModel.Raison
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        Style="width:100%"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                        </RadzenDropDown>
+                    </p>
+
+                    <MatButton Class="save" Type="submit" Raised="true" Icon="done">Valider</MatButton>
+                    <MatButton Class="cancel" Type="button" Outlined="true" OnClick="@Cancel" Icon="clear">Annuler</MatButton>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private CompteClubFormulaireViewModel compteClubFormulaireViewModel = new CompteClubFormulaireViewModel();
+
+    private List<string> raisonList = new List<string>() {
+        "Récupération Blanchisserie",
+        "Don A <- B (Transfert compte club B de A)",
+        "Réception B -> A (Réception compte club B de A)",
+        "Blanchiment Mano",
+        "Blanchiment Verts",
+        "Blanchiment Zetas",
+        "Blanchiment Ballas",
+        "Blanchiment Vagos",
+        "Blanchiment Non Cartel",
+        "Blanchiment PM",
+        "Paiement Fredo",
+        "Perte ou amende",
+        "Ajustement Compte",
+        "Paie Des Membres"
+    };
+
+
+    private List<GroupeViewModel> groupeViewModelList = new List<GroupeViewModel>();
+    private List<PersonneViewModel> personneViewModelList = new List<PersonneViewModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleCompteClubFormulaire);
+
+        personneViewModelList = (await PersonneService.GetPersonneFromGroupe(1)).OrderBy(p => p.Nom).ToList();
+    }
+
+
+    private void HandleValidSubmit()
+    {
+        Task.Run(async () => await CompteClubTransactionService.AddOrUpdateAsync(compteClubFormulaireViewModel)).Wait();
+
+        NavManager.NavigateTo(ConstantsUrl.CompteClubIndex);
+
+    }
+
+    public void Cancel()
+    {
+        NavManager.NavigateTo(ConstantsUrl.CompteClubIndex);
+    }
+}

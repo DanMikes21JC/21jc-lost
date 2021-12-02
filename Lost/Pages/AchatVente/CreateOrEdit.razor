@@ -1,0 +1,111 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.AchatVenteCreateOrEdit)]
+@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.AchatVenteCreateOrEdit + "/{Id:long}")]
+
+@inject IAchatVenteService AchatVenteService
+@inject IPersonneService PersonneService
+@inject IGroupeService GroupeService
+@inject NavigationManager NavManager
+@inject IJSRuntime jsRuntime
+@inject NotifierTitleService NotifierTitle
+
+<div class="box-create">
+    <EditForm Model="@achatVenteViewModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="mat-layout-grid">
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+
+                    <p>
+                        <RadzenLabel Text="Date de l'achat/vente'" Style="width:100%" />
+                        <RadzenDatePicker DateFormat="" TValue="DateTime" Style="width:100%"
+                                          @bind-Value=@achatVenteViewModel.Date
+                                          Placeholder="Date du blanchiment" />
+                        <ValidationMessage For="@(() => achatVenteViewModel.Date)" />
+                    </p>
+                    <p>
+                        <MatTextField Label="Description" @bind-Value="@achatVenteViewModel.Description" FullWidth="true" />
+                        <ValidationMessage For="@(() => achatVenteViewModel.Nb)" />
+                    </p>
+                    <p>
+                        <MatTextField Label="Payé (- si achat)" @bind-Value="@achatVenteViewModel.Nb" FullWidth="true" />
+                        <ValidationMessage For="@(() => achatVenteViewModel.Nb)" />
+                    </p>
+
+                    <p>
+                        <MatBlazor.MatCheckbox Label="Est une petite main" @bind-Value="@achatVenteViewModel.IsPetiteMain" Style="display: table-cell; vertical-align: middle;" FullWidth="true" />
+                    </p>
+
+                    @if (achatVenteViewModel.IsPetiteMain)
+                    {
+                        <p>
+                            <div class="title-dropdown">Petite main</div>
+                            <RadzenDropDown Data="personneViewModelList"
+                                            @bind-Value=@achatVenteViewModel.PersonneViewModel
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            Style="width:100%"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            TextProperty="Nom">
+                            </RadzenDropDown>
+                        </p>
+                    }
+                    else
+                    {
+                        <p>
+                            <div class="title-dropdown">Groupe</div>
+                            <RadzenDropDown Data="groupeViewModelList"
+                                            @bind-Value=@achatVenteViewModel.GroupeViewModel
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            Style="width:100%"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            TextProperty="Nom">
+                            </RadzenDropDown>
+                        </p>
+                    }
+
+                    <MatButton Class="save" Type="submit" Raised="true" Icon="done">Valider</MatButton>
+                    <MatButton Class="cancel" Type="button" Outlined="true" OnClick="@Cancel" Icon="clear">Annuler</MatButton>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+
+    private AchatVenteViewModel achatVenteViewModel = new AchatVenteViewModel();
+
+    private List<GroupeViewModel> groupeViewModelList = new List<GroupeViewModel>();
+    private List<PersonneViewModel> personneViewModelList = new List<PersonneViewModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleAchatVenteCreateOrEdit);
+
+        if (Id > 0)
+        {
+            achatVenteViewModel = await AchatVenteService.GetAsync(Id);
+        }
+
+        groupeViewModelList = (await GroupeService.GetAllWithTauxAsync()).ToList();
+        personneViewModelList = (await PersonneService.GetAllWithTauxAsync()).ToList();
+    }
+
+
+    private void HandleValidSubmit()
+    {
+        Task.Run(async () => await AchatVenteService.AddOrUpdateAsync(achatVenteViewModel)).Wait();
+
+        NavManager.NavigateTo(ConstantsUrl.AchatVenteIndex);
+
+    }
+
+    public void Cancel()
+    {
+        NavManager.NavigateTo(ConstantsUrl.AchatVenteIndex);
+    }
+}

@@ -1,0 +1,97 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.UtilisateurCreateOrEdit)]
+@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.UtilisateurCreateOrEdit + "/{Id:long}")]
+
+@inject IPersonneService PersonneService
+@inject IUtilisateurService UtilisateurService
+@inject NavigationManager NavManager
+@inject IJSRuntime jsRuntime
+@inject NotifierTitleService NotifierTitle
+
+    <AuthorizeView Roles="Administrateur" Context="isUserAdmin">
+        <Authorized>
+            <div class="box-create">
+                <EditForm Model="@utilisateurViewModel" OnValidSubmit="HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    <div class="mat-layout-grid">
+                        <div class="mat-layout-grid-inner">
+                            <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+
+                                <p>
+                                    <MatTextField Label="Discord Auth" @bind-Value="@utilisateurViewModel.DiscordAuth" FullWidth="true" />
+                                    <ValidationMessage For="@(() => utilisateurViewModel.DiscordAuth)" />
+                                </p>
+
+                                <p>
+                                    <div class="title-dropdown">Utilisateur</div>
+                                    <RadzenDropDown Data="personneViewModelList"
+                                                    @bind-Value=@utilisateurViewModel.PersonneViewModel
+                                                    AllowClear="true"
+                                                    AllowFiltering="true"
+                                                    Style="width:100%"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    TextProperty="Nom">
+                                    </RadzenDropDown>
+
+                                    <ValidationMessage For="@(() => utilisateurViewModel.PersonneViewModel)" />
+                                </p>
+
+                                <p>
+                                    <div class="title-dropdown">Rôle</div>
+                                    <RadzenDropDown Data="roles"
+                                                    @bind-Value=@utilisateurViewModel.Role
+                                                    AllowClear="true"
+                                                    AllowFiltering="true"
+                                                    Style="width:100%"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    >
+                                    </RadzenDropDown>
+
+                                    <ValidationMessage For="@(() => utilisateurViewModel.Role)" />
+                                </p>
+
+                                <MatButton Class="save" Type="submit" Raised="true" Icon="done">Valider</MatButton>
+                                <MatButton Class="cancel" Type="button" Outlined="true" OnClick="@Cancel" Icon="clear">Annuler</MatButton>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+
+            @code {
+                [Parameter]
+                public long Id { get; set; }
+
+                private UtilisateurViewModel utilisateurViewModel = new UtilisateurViewModel();
+
+                private string[] roles = new[] { "Utilisateur", "Administrateur" };
+
+                private List<PersonneViewModel> personneViewModelList = new List<PersonneViewModel>();
+
+                protected override async Task OnInitializedAsync()
+                {
+                    await NotifierTitle.Update(Lost.SharedLib.Constants.TitleUtilisateurCreateOrEdit);
+
+                    if (Id > 0)
+                    {
+                        utilisateurViewModel = await UtilisateurService.GetAsync(Id);
+                    }
+
+                    personneViewModelList = (await PersonneService.GetAllAsync()).ToList();
+                }
+
+
+                private void HandleValidSubmit()
+                {
+                    Task.Run(async () => await UtilisateurService.AddOrUpdateAsync(utilisateurViewModel)).Wait();
+
+                    NavManager.NavigateTo(ConstantsUrl.UtilisateurIndex);
+
+                }
+
+                public void Cancel()
+                {
+                    NavManager.NavigateTo(ConstantsUrl.UtilisateurIndex);
+                }
+            }
+        </Authorized>
+    </AuthorizeView>

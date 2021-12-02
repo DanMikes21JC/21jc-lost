@@ -1,0 +1,117 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.SacIndex)]
+@inject ISacService SacService
+@inject ISemaineService SemaineService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+@if (sacViewModel == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <Confirm @ref="deleteConfirmation"
+             ConfirmationChanged="ConfirmDelete_Click"
+             ConfirmationMessage=@($"Êtes-vous sûr de vouloir supprimer ce blanchiment ?")
+             UnableMessage=@($"")>
+    </Confirm>
+
+    <RadzenDropDown Data="semaineViewModelList"
+                    @bind-Value=@semaineViewModelSelected
+                    AllowClear="true"
+                    AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    TextProperty="Libelle"
+                    Placeholder="Semaine"
+                    Change="SemaineChange">
+    </RadzenDropDown>
+
+    <MatButton Icon="add" Raised="true" Class="mb-3 float-right" @onclick="RedirectToCreate">Blanchiment</MatButton>
+
+    <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="SacViewModel" Items="sacViewModel" PageSize="12">
+        <BlazorTable.Column TableItem="SacViewModel" Title="Date" Field="@(x => x.Date)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="SacViewModel" Title="De" Field="@(x => x.From)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="SacViewModel" Title="Argent sale" Field="@(x => x.ArgentSaleString)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="SacViewModel" Title="Payé" Field="@(x => x.PayeString)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="SacViewModel" Title="Bénéfice" Field="@(x => x.BeneficeString)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="SacViewModel" Title="Actions" Width="10%">
+            <Template Context="tableContext">
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="create" @onclick="@(() => RedirectToEdit(tableContext.Id))"></MatIconButton>
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="delete" @onclick="@(() => RedirectToDelete(tableContext))"></MatIconButton>
+            </Template>
+        </BlazorTable.Column>
+        <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </BlazorTable.Table>
+}
+
+@code {
+    private SacViewModel[] sacViewModel;
+    private SacViewModel sacViewModelDelete;
+
+    private SemaineViewModel[] semaineViewModelList;
+    private SemaineViewModel semaineViewModelSelected;
+
+    private SacViewModel[] allSacViewModel;
+
+
+    protected ConfirmBase deleteConfirmation { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleTransactionIndex);
+
+        sacViewModelDelete = new SacViewModel();
+        allSacViewModel = await SacService.GetAllAsync();
+        allSacViewModel = allSacViewModel.OrderByDescending(v => v.Date).ToArray();
+        sacViewModel = allSacViewModel;
+        semaineViewModelList = await SemaineService.GetAllAsync();
+        semaineViewModelSelected = semaineViewModelList.Last();
+        semaineViewModelList = semaineViewModelList.OrderByDescending(s => s.Num).ToArray();
+        SemaineChange();
+    }
+
+    protected void RedirectToCreate()
+    {
+        NavManager.NavigateTo(ConstantsUrl.SacCreateOrEdit);
+    }
+
+    protected void RedirectToEdit(long id)
+    {
+        NavManager.NavigateTo(ConstantsUrl.SacCreateOrEdit + "/" + id);
+    }
+
+    protected async Task RedirectToDelete(SacViewModel viewModel)
+    {
+        sacViewModelDelete = viewModel;
+        bool canBeDeleted = await SacService.CanBeDeleted(viewModel.Id);
+        if (canBeDeleted)
+        {
+            deleteConfirmation.Show();
+        }
+        else
+        {
+            deleteConfirmation.ShowUnableDelete();
+        }
+    }
+
+    protected async Task ConfirmDelete_Click(bool deleteConfirmed)
+    {
+        if (deleteConfirmed)
+        {
+            await SacService.DeleteAsync(sacViewModelDelete.Id);
+            sacViewModel = await SacService.GetAllAsync();
+        }
+    }
+
+    private void SemaineChange()
+    {
+        if(semaineViewModelSelected == null)
+        {
+            sacViewModel = allSacViewModel;
+        }
+        else
+        {
+            sacViewModel = allSacViewModel.Where(t => t.SemaineViewModel.Id == semaineViewModelSelected.Id).ToArray();
+        }
+    }
+}

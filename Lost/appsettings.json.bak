@@ -1,0 +1,17 @@
+{
+  "ConnectionStrings": {
+    "LostConnectionString": ""
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "AllowedHosts": "*",
+  "Discord": {
+    "AppId": "858468256607633469",
+    "AppSecret": "rIHaVU1ZU5Y6ufJxsHbxuRlAdUGkdu5Z"
+  }
+}

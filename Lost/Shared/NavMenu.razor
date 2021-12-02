@@ -1,0 +1,85 @@
+﻿<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">The Lost MC</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" @onclick="()=>expandSubNav = !expandSubNav">
+                <span class="material-icons">local_laundry_service</span><span style="margin-left: 8px;">Blanchiment</span>
+            </NavLink>
+            @if (expandSubNav)
+            {
+                <div style="margin-left: 20px;">
+                    <NavLink class="nav-link" href="billet/index">
+                        <span class="fontawe far fa-money-bill-alt" aria-hidden="true"></span> <span style="margin-left: 15px;">Billets</span>
+                    </NavLink>
+                    <NavLink class="nav-link" href="sac/index">
+                        <span class="material-icons">monetization_on</span> <span style="margin-left: 12px;">Sacs</span>
+                    </NavLink>
+                    <NavLink class="nav-link" href="voiture/index">
+                        <span class="fontawe fas fa-car" aria-hidden="true"></span> <span style="margin-left: 15px;">Voitures</span>
+                    </NavLink>
+                </div>
+            }
+        </li>
+
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" @onclick="()=>expandSubNavCompteClub = !expandSubNavCompteClub">
+                <span class="material-icons">folder</span><span style="margin-left: 8px;">Compte Club</span>
+            </NavLink>
+            @if (expandSubNavCompteClub)
+            {
+        <div style="margin-left: 20px;">
+            <NavLink class="nav-link" href="compteclub/index">
+                <span class="fontawe far fa-file"></span> <span style="margin-left: 12px;">Index</span>
+            </NavLink>
+            <NavLink class="nav-link" href="compteclub/formulaire">
+                <span class="fontawe fab fa-wpforms" aria-hidden="true"></span> <span style="margin-left: 15px;">Formulaire</span>
+            </NavLink>
+        </div>
+            }
+        </li>
+
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="achatvente/index">
+                <span class="fontawe fas fa-exchange-alt" aria-hidden="true"></span> <span style="margin-left: 15px;">Achat/Vente</span>
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="personne/index">
+                <span class="oi oi-paperclip" aria-hidden="true"></span> Annuaire
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="groupe/index">
+                <span class="oi oi-people" aria-hidden="true"></span> Groupes
+            </NavLink>
+        </li>
+        <AuthorizeView Roles="Administrateur" Context="isUserAdmin">
+            <Authorized>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="utilisateur/index">
+                        <span class="oi oi-person" aria-hidden="true"></span> Utilisateurs
+                    </NavLink>
+                </li>
+            </Authorized>
+        </AuthorizeView>
+    </ul>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private bool expandSubNav;
+    private bool expandSubNavCompteClub;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

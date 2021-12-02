@@ -1,0 +1,77 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.UtilisateurIndex)]
+@inject IUtilisateurService UtilisateurService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+    <AuthorizeView Roles="Administrateur" Context="isUserAdmin">
+        <Authorized>
+
+            @if (utilisateurViewModel == null)
+            {
+                <div class="spinner"></div>
+            }
+            else
+            {
+                <Confirm @ref="deleteConfirmation"
+                         ConfirmationChanged="ConfirmDelete_Click"
+                         ConfirmationMessage=@($"Êtes-vous sûr de vouloir supprimer \"{utilisateurViewModelDelete?.PersonneViewModel.Nom}\" ?")
+                         UnableMessage=@($"")>
+                </Confirm>
+
+                <MatButton Icon="add" Raised="true" Class="mb-3 float-right" @onclick="RedirectToCreate">Ajouter</MatButton>
+
+                <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="UtilisateurViewModel" Items="utilisateurViewModel" PageSize="12">
+                    <BlazorTable.Column TableItem="UtilisateurViewModel" Title="Discord ID" Field="@(x => x.DiscordAuth)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="UtilisateurViewModel" Title="Nom" Field="@(x => x.NomPrenom)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="UtilisateurViewModel" Title="Rôle" Field="@(x => x.Role)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="UtilisateurViewModel" Title="Actions" Width="10%">
+                        <Template Context="tableContext">
+                            <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="create" @onclick="@(() => RedirectToEdit(tableContext.Id))"></MatIconButton>
+                            <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="delete" @onclick="@(() => RedirectToDelete(tableContext))"></MatIconButton>
+                        </Template>
+                    </BlazorTable.Column>
+                    <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+                </BlazorTable.Table>
+            }
+
+            @code {
+                private UtilisateurViewModel[] utilisateurViewModel;
+                private UtilisateurViewModel utilisateurViewModelDelete;
+
+                protected ConfirmBase deleteConfirmation { get; set; }
+
+                protected override async Task OnInitializedAsync()
+                {
+                    await NotifierTitle.Update(Lost.SharedLib.Constants.TitleUtilisateurIndex);
+
+                    utilisateurViewModelDelete = new UtilisateurViewModel();
+                    utilisateurViewModel = await UtilisateurService.GetAllAsync();
+                }
+
+                protected void RedirectToCreate()
+                {
+                    NavManager.NavigateTo(ConstantsUrl.UtilisateurCreateOrEdit);
+                }
+
+                protected void RedirectToEdit(long id)
+                {
+                    NavManager.NavigateTo(ConstantsUrl.UtilisateurCreateOrEdit + "/" + id);
+                }
+
+                protected void RedirectToDelete(UtilisateurViewModel viewModel)
+                {
+                    utilisateurViewModelDelete = viewModel;
+                    deleteConfirmation.Show();
+                }
+
+                protected async Task ConfirmDelete_Click(bool deleteConfirmed)
+                {
+                    if (deleteConfirmed)
+                    {
+                        await UtilisateurService.DeleteAsync(utilisateurViewModelDelete.Id);
+                        utilisateurViewModel = await UtilisateurService.GetAllAsync();
+                    }
+                }
+            }
+        </Authorized>
+    </AuthorizeView>

@@ -1,0 +1,94 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.PersonneIndex)]
+@inject IPersonneService PersonneService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+@if (personneViewModel == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <Confirm @ref="deleteConfirmation"
+             ConfirmationChanged="ConfirmDelete_Click"
+             ConfirmationMessage=@($"Êtes-vous sûr de vouloir supprimer \"{personneViewModelDelete.Nom}\" ?")
+             UnableMessage=@($"Impossible de supprimer \"{personneViewModelDelete.Nom}\" car il est attribué à une transaction.")>
+    </Confirm>
+
+    <RadzenTextBox Placeholder="Search..." Change=@(args => OnChange(args, "Rechercher")) />
+
+    <MatButton Icon="add" Raised="true" Class="mb-3 float-right" @onclick="RedirectToCreate">Créer</MatButton>
+
+    <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="PersonneViewModel" Items="personneViewModel" PageSize="12">
+        <BlazorTable.Column TableItem="PersonneViewModel" Title="Nom" Field="@(x => x.Nom)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="PersonneViewModel" Title="Tel" Field="@(x => x.Tel)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="PersonneViewModel" Title="Adresse" Field="@(x => x.Adresse)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="PersonneViewModel" Title="Commentaire" Field="@(x => x.Commentaire)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="PersonneViewModel" Title="Groupe" Field="@(x => x.GroupeViewModel.Nom)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="PersonneViewModel" Title="Actions" Width="10%">
+            <Template Context="tableContext">
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="create" @onclick="@(() => RedirectToEdit(tableContext.Id))"></MatIconButton>
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="delete" @onclick="@(() => RedirectToDelete(tableContext))"></MatIconButton>
+            </Template>
+        </BlazorTable.Column>
+        <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </BlazorTable.Table>
+}
+
+@code {
+    private PersonneViewModel[] personneViewModel;
+    private PersonneViewModel[] allPersonneViewModel;
+    private PersonneViewModel personneViewModelDelete;
+
+    protected ConfirmBase deleteConfirmation { get; set; }
+
+    protected string Rechercher { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitlePersonneIndex);
+
+        personneViewModelDelete = new PersonneViewModel();
+        allPersonneViewModel = (await PersonneService.GetAllAsync()).OrderBy(p => p.Nom).ToArray();
+        personneViewModel = allPersonneViewModel;
+    }
+
+    protected void RedirectToCreate()
+    {
+        NavManager.NavigateTo(ConstantsUrl.PersonneCreateOrEdit);
+    }
+
+    protected void RedirectToEdit(long id)
+    {
+        NavManager.NavigateTo(ConstantsUrl.PersonneCreateOrEdit + "/" + id);
+    }
+
+    protected async Task RedirectToDelete(PersonneViewModel viewModel)
+    {
+        personneViewModelDelete = viewModel;
+        bool canBeDeleted = await PersonneService.CanBeDeleted(viewModel.Id);
+        if (canBeDeleted)
+        {
+            deleteConfirmation.Show();
+        }
+        else
+        {
+            deleteConfirmation.ShowUnableDelete();
+        }
+    }
+
+    protected async Task ConfirmDelete_Click(bool deleteConfirmed)
+    {
+        if (deleteConfirmed)
+        {
+            await PersonneService.DeleteAsync(personneViewModelDelete.Id);
+            personneViewModel = await PersonneService.GetAllAsync();
+        }
+    }
+
+    protected void OnChange(string value, string name)
+    {
+        value = value.ToLower();
+        personneViewModel = allPersonneViewModel.Where(p => (p.Nom != null && p.Nom.ToLower().Contains(value)) || (p.Adresse != null && p.Adresse.ToLower().Contains(value)) || (p.Commentaire != null && p.Commentaire.ToLower().Contains(value)) || (p.Tel != null && p.Tel.ToLower().Contains(value)) || (p.GroupeViewModel != null && p.GroupeViewModel?.Nom != null && p.GroupeViewModel.Nom.ToLower().Contains(value))).ToArray();
+    }
+}

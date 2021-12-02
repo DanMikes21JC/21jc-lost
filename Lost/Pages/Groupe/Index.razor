@@ -1,0 +1,79 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.GroupeIndex)]
+@inject IGroupeService GroupeService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+@if (groupeViewModel == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <Confirm @ref="deleteConfirmation"
+             ConfirmationChanged="ConfirmDelete_Click"
+             ConfirmationMessage=@($"Êtes-vous sûr de vouloir supprimer \"{groupeViewModelDelete.Nom}\" ?")
+             UnableMessage=@($"Impossible de supprimer \"{groupeViewModelDelete.Nom}\" car il est attribué à une personne.")>
+    </Confirm>
+
+    <MatButton Icon="add" Raised="true" Class="mb-3 float-right" @onclick="RedirectToCreate">Créer</MatButton>
+
+    <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="GroupeViewModel" Items="groupeViewModel" PageSize="12">
+        <BlazorTable.Column TableItem="GroupeViewModel" Title="Nom" Field="@(x => x.Nom)" Sortable="true" Filterable="true" Width="60%" />
+        <BlazorTable.Column TableItem="GroupeViewModel" Title="Groupe Cartel" Field="@(x => x.IsGroupeCartel)" Sortable="true" Filterable="true" Width="20%" />
+        <BlazorTable.Column TableItem="GroupeViewModel" Title="Actions" Width="20%">
+            <Template Context="tableContext">
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="create" @onclick="@(() => RedirectToEdit(tableContext.Id))"></MatIconButton>
+                <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="delete" @onclick="@(() => RedirectToDelete(tableContext))"></MatIconButton>
+            </Template>
+        </BlazorTable.Column>
+        <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </BlazorTable.Table>
+}
+
+@code {
+    private GroupeViewModel[] groupeViewModel;
+    private GroupeViewModel groupeViewModelDelete;
+
+    protected ConfirmBase deleteConfirmation { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleGroupeIndex);
+
+        groupeViewModelDelete = new GroupeViewModel();
+        groupeViewModel = await GroupeService.GetAllAsync();
+    }
+
+    protected void RedirectToCreate()
+    {
+        NavManager.NavigateTo(ConstantsUrl.GroupeCreateOrEdit);
+    }
+
+    protected void RedirectToEdit(long id)
+    {
+        NavManager.NavigateTo(ConstantsUrl.GroupeCreateOrEdit + "/" + id);
+    }
+
+    protected async Task RedirectToDelete(GroupeViewModel viewModel)
+    {
+        groupeViewModelDelete = viewModel;
+        bool canBeDeleted = await GroupeService.CanBeDeleted(viewModel.Id);
+        if (canBeDeleted)
+        {
+            deleteConfirmation.Show();
+        }
+        else
+        {
+            deleteConfirmation.ShowUnableDelete();
+        }
+    }
+
+    protected async Task ConfirmDelete_Click(bool deleteConfirmed)
+    {
+        if (deleteConfirmed)
+        {
+            await GroupeService.DeleteAsync(groupeViewModelDelete.Id);
+            groupeViewModel = await GroupeService.GetAllAsync();
+        }
+    }
+}

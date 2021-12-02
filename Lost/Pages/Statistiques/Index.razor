@@ -1,0 +1,122 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.StatistiqueIndex)]
+@attribute [Microsoft.AspNetCore.Components.RouteAttribute("/")]
+
+@inject IStatistiqueGroupeService StatistiqueGroupeService
+@inject IStatistiquePersonneService StatistiquePersonneService
+@inject ISemaineService SemaineService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+
+@if (statistiquePersonneViewModel == null)
+{
+    <div class="spinner"></div>
+}
+else
+{
+    <RadzenDropDown Data="semaineViewModelList"
+                    @bind-Value=@semaineViewModelSelected
+                    AllowClear="true"
+                    AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    TextProperty="Libelle"
+                    Placeholder="Semaine"
+                    Change="SemaineChange">
+    </RadzenDropDown>
+    <div class="mat-layout-grid">
+        <div class="mat-layout-grid-inner">
+            <div class="mat-layout-grid-cell mat-layout-grid-cell-span-6">
+
+                <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="StatistiqueGroupeViewModel" Items="statistiqueGroupeViewModel" PageSize="12">
+                    <BlazorTable.Column TableItem="StatistiqueGroupeViewModel" Title="Groupe" Field="@(x => x.Nom)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiqueGroupeViewModel" Title="Billet" Field="@(x => x.BilletString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiqueGroupeViewModel" Title="Sac" Field="@(x => x.SacString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiqueGroupeViewModel" Title="Voiture" Field="@(x => x.VoitureString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiqueGroupeViewModel" Title="Benefice" Field="@(x => x.BeneficeString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+                </BlazorTable.Table>
+            </div>
+            <div class="mat-layout-grid-cell mat-layout-grid-cell-span-6">
+
+                <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="StatistiquePersonneViewModel" Items="statistiquePersonneViewModel" PageSize="12">
+                    <BlazorTable.Column TableItem="StatistiquePersonneViewModel" Title="Personne" Field="@(x => x.Nom)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiquePersonneViewModel" Title="Billet" Field="@(x => x.BilletString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiquePersonneViewModel" Title="Sac" Field="@(x => x.SacString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiquePersonneViewModel" Title="Voiture" Field="@(x => x.VoitureString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Column TableItem="StatistiquePersonneViewModel" Title="Benefice" Field="@(x => x.BeneficeString)" Sortable="true" Filterable="true" Width="20%" />
+                    <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+                </BlazorTable.Table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private StatistiqueGroupeViewModel[] statistiqueGroupeViewModel;
+    private StatistiquePersonneViewModel[] statistiquePersonneViewModel;
+
+    private SemaineViewModel[] semaineViewModelList;
+    private SemaineViewModel semaineViewModelSelected;
+
+    private StatistiqueGroupeViewModel[] allStatistiqueGroupeViewModel;
+    private StatistiquePersonneViewModel[] allStatistiquePersonneViewModel;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleStatistiqueIndex);
+
+        allStatistiqueGroupeViewModel = await StatistiqueGroupeService.GetAllAsync();
+        allStatistiquePersonneViewModel = await StatistiquePersonneService.GetAllAsync();
+        allStatistiqueGroupeViewModel = allStatistiqueGroupeViewModel.OrderByDescending(v => v.Benefice).ToArray();
+        allStatistiquePersonneViewModel = allStatistiquePersonneViewModel.OrderByDescending(v => v.Benefice).ToArray();
+        statistiqueGroupeViewModel = allStatistiqueGroupeViewModel;
+        statistiquePersonneViewModel = allStatistiquePersonneViewModel;
+        semaineViewModelList = await SemaineService.GetAllAsync();
+        semaineViewModelSelected = semaineViewModelList.Last();
+        semaineViewModelList = semaineViewModelList.OrderByDescending(s => s.Num).ToArray();
+        SemaineChange();
+    }
+
+    private void SemaineChange()
+    {
+        if (semaineViewModelSelected == null)
+        {
+            List<StatistiqueGroupeViewModel> listGroupe = new List<StatistiqueGroupeViewModel>();
+            foreach (var stat in allStatistiqueGroupeViewModel.GroupBy(s => s.Nom))
+            {
+                StatistiqueGroupeViewModel statPerVm = new StatistiqueGroupeViewModel();
+                statPerVm.Nom = stat.Key;
+                foreach (var s in stat)
+                {
+                    statPerVm.Benefice += s.Benefice;
+                    statPerVm.Billet += s.Billet;
+                    statPerVm.Voiture += s.Voiture;
+                    statPerVm.Sac += s.Sac;
+                }
+                listGroupe.Add(statPerVm);
+            }
+            statistiqueGroupeViewModel = listGroupe.ToArray();
+
+            List<StatistiquePersonneViewModel> listPersonne = new List<StatistiquePersonneViewModel>();
+            foreach(var stat in allStatistiquePersonneViewModel.GroupBy(s => s.Nom))
+            {
+                StatistiquePersonneViewModel statPerVm = new StatistiquePersonneViewModel();
+                statPerVm.Nom = stat.Key;
+                foreach(var s in stat)
+                {
+                    statPerVm.Benefice += s.Benefice;
+                    statPerVm.Billet += s.Billet;
+                    statPerVm.Voiture += s.Voiture;
+                    statPerVm.Sac += s.Sac;
+                }
+                listPersonne.Add(statPerVm);
+            }
+            statistiquePersonneViewModel = listPersonne.ToArray();
+        }
+        else
+        {
+            statistiqueGroupeViewModel = allStatistiqueGroupeViewModel.Where(t => t.Numero == semaineViewModelSelected.Num).ToArray();
+            statistiquePersonneViewModel = allStatistiquePersonneViewModel.Where(t => t.Numero == semaineViewModelSelected.Num).ToArray();
+        }
+    }
+    }

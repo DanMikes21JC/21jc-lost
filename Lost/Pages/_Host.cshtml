@@ -1,0 +1,38 @@
+﻿@page "/"
+@namespace Lost.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lost</title>
+    <base href="~/" />
+    <link href="_content/MatBlazor/dist/matBlazor.css" rel="stylesheet" />
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/default-base.css">
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/customCss.css" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link href="Lost.styles.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/font-awesome/css/fontawesome.min.css" />
+</head>
+<body>
+    @(await Html.RenderComponentAsync<App>(RenderMode.Server))
+
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/BlazorTable/BlazorTable.min.js"></script>
+    <script src="_content/MatBlazor/dist/matBlazor.js"></script>
+    <script src="css/font-awesome/js/all.min.js"></script>
+
+    <script>
+        (function start() {
+            Blazor.start({
+                logLevel: 1, // LogLevel.Debug
+                configureSignalR: builder => builder.configureLogging("debug") // LogLevel.Debug
+            });
+        })()
+    </script>
+</body>
+</html>

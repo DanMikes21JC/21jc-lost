@@ -1,0 +1,49 @@
+﻿@using Lost.Components
+
+@inherits ConfirmBase
+@if (ShowConfirmation || ShowUnable)
+{
+    <div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog" style="color:black">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    @if (ShowConfirmation)
+                    {
+                        <h5 class="modal-title" id="exampleModalLabel">@ConfirmationTitle</h5>
+                    }
+                    else if (ShowUnable)
+                    {
+                        <h5 class="modal-title" id="exampleModalLabel">@UnableTitle</h5>
+                    }
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                            @onclick="() => OnConfirmationChange(false)">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (ShowConfirmation)
+                    {
+                        @ConfirmationMessage
+                    }
+                    else if (ShowUnable)
+                    {
+                        @UnableMessage
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            @onclick="() => OnConfirmationChange(false)">
+                        Annuler
+                    </button>
+                    @if (ShowConfirmation)
+                    {
+                        <button type="button" class="btn btn-danger"
+                                @onclick="() => OnConfirmationChange(true)">
+                            Supprimer
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}

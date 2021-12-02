@@ -1,0 +1,138 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.SacCreateOrEdit)]
+@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.SacCreateOrEdit + "/{Id:long}")]
+
+@inject ISacService SacService
+@inject IPersonneService PersonneService
+@inject IGroupeService GroupeService
+@inject NavigationManager NavManager
+@inject IJSRuntime jsRuntime
+@inject NotifierTitleService NotifierTitle
+
+<div class="box-create">
+    <EditForm Model="@sacViewModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="mat-layout-grid">
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+
+                    <p>
+                        <RadzenLabel Text="Date du blanchiment" Style="width:100%" />
+                        <RadzenDatePicker DateFormat="" TValue="DateTime" Style="width:100%"
+                                          @bind-Value=@sacViewModel.Date
+                                          Placeholder="Date du blanchiment" />
+                        <ValidationMessage For="@(() => sacViewModel.Date)" />
+                    </p>
+                    <p>
+                        <MatTextField Label="Nombre de sac" @bind-Value="@sacViewModel.Nb" FullWidth="true" />
+                        <ValidationMessage For="@(() => sacViewModel.Nb)" />
+                    </p>
+
+                    <p>
+                        <MatBlazor.MatCheckbox Label="Est une petite main" @bind-Value="@sacViewModel.IsPetiteMain" Style="display: table-cell; vertical-align: middle;" FullWidth="true" />
+                    </p>
+
+                    @if (sacViewModel.IsPetiteMain)
+                    {
+                        <p>
+                            <div class="title-dropdown">Petite main</div>
+                            <RadzenDropDown Data="personneViewModelList"
+                                            @bind-Value=@sacViewModel.PersonneViewModel
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            Style="width:100%"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            TextProperty="Nom">
+                            </RadzenDropDown>
+                        </p>
+
+                        @if (sacViewModel.PersonneViewModel != null)
+                        {
+                            <p>
+                                <MatTextField Label="Valeur sac (en $)" @bind-Value="@sacViewModel.PersonneViewModel.TauxBlanchimentViewModel.ValeurSac" FullWidth="true" />
+                                <ValidationMessage For="@(() => sacViewModel.PersonneViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurSac)" />
+                            </p>
+                        }
+
+                    }
+                    else
+                    {
+                        <p>
+                            <div class="title-dropdown">Groupe</div>
+                            <RadzenDropDown Data="groupeViewModelList"
+                                            @bind-Value=@sacViewModel.GroupeViewModel
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            Style="width:100%"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            TextProperty="Nom">
+                            </RadzenDropDown>
+                        </p>
+
+                        @if (sacViewModel.GroupeViewModel != null)
+                        {
+                            <p>
+                                <MatTextField Label="Valeur sac (en $)" @bind-Value="@sacViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurSac" FullWidth="true" />
+                                <ValidationMessage For="@(() => sacViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurSac)" />
+                            </p>
+                        }
+
+                    }
+
+                    @if (sacViewModel.GroupeViewModel != null && !sacViewModel.IsPetiteMain)
+                    {
+                        <p>
+                            <MatTextField Label="A payer" @bind-Value="@sacViewModel.GroupePayerSac" FullWidth="true" />
+                        </p>
+                    }
+                    else @if (sacViewModel.PersonneViewModel != null && sacViewModel.IsPetiteMain)
+                    {
+                        <p>
+                            <MatTextField Label="A payer" @bind-Value="@sacViewModel.PersonnePayerSac" FullWidth="true" />
+                        </p>
+
+                    }
+                    <MatButton Class="save" Type="submit" Raised="true" Icon="done">Valider</MatButton>
+                    <MatButton Class="cancel" Type="button" Outlined="true" OnClick="@Cancel" Icon="clear">Annuler</MatButton>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+
+    private SacViewModel sacViewModel = new SacViewModel();
+
+    private List<GroupeViewModel> groupeViewModelList = new List<GroupeViewModel>();
+    private List<PersonneViewModel> personneViewModelList = new List<PersonneViewModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleTransactionCreateOrEdit);
+
+        if (Id > 0)
+        {
+            sacViewModel = await SacService.GetAsync(Id);
+        }
+
+        groupeViewModelList = (await GroupeService.GetAllWithTauxAsync()).ToList();
+        personneViewModelList = (await PersonneService.GetAllWithTauxAsync()).ToList();
+    }
+
+
+    private void HandleValidSubmit()
+    {
+        Task.Run(async () => await SacService.AddOrUpdateAsync(sacViewModel)).Wait();
+
+        NavManager.NavigateTo(ConstantsUrl.SacIndex);
+
+    }
+
+    public void Cancel()
+    {
+        NavManager.NavigateTo(ConstantsUrl.SacIndex);
+    }
+}

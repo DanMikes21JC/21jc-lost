@@ -1,0 +1,273 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.MachineIndex)]
+@inject IVoiturePersonneService VoiturePersonneService
+@inject IPersonneService PersonneService
+@inject IVoitureService VoitureService
+@inject IGroupeService GroupeService
+@inject NavigationManager NavManager
+@inject NotifierTitleService NotifierTitle
+@inject HttpClient Http
+@using BlazorTable
+@using Newtonsoft.Json
+
+@if (voiturePersonneViewModel == null)
+{
+<div class="spinner"></div>
+}
+else
+{
+@if (ShowValid)
+    {
+<div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog" style="background:rgba(0,0,0,0.8)">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="background:rgba(50,50,50)">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Validation</h5>
+
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                        @onclick="() => OnConfirmationChange(false)">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <EditForm Model="@voitureViewModel" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <div class="modal-body">
+
+
+                    <p>
+                        <MatBlazor.MatCheckbox Label="Est une petite main" @bind-Value="@voitureViewModel.IsPetiteMain" Style="display: table-cell; vertical-align: middle;" FullWidth="true" />
+                    </p>
+
+                    @if (voitureViewModel.IsPetiteMain)
+                            {
+                    <p>
+                        <div class="title-dropdown">Petite main</div>
+                        <RadzenDropDown Data="personneViewModelList"
+                                        @bind-Value=@voitureViewModel.PersonneViewModel
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        Style="width:100%"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        TextProperty="Nom">
+                        </RadzenDropDown>
+                    </p>
+
+                    @if (voitureViewModel.PersonneViewModel != null)
+                                {
+                    <p>
+                        <MatTextField Label="Valeur voiture (en $)" @bind-Value="@voitureViewModel.PersonneViewModel.TauxBlanchimentViewModel.ValeurVoiture" FullWidth="true" />
+                        <ValidationMessage For="@(() => voitureViewModel.PersonneViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurVoiture)" />
+                    </p>
+                                }
+
+                            }
+                            else
+                            {
+                    <p>
+                        <div class="title-dropdown">Groupe</div>
+                        <RadzenDropDown Data="groupeViewModelList"
+                                        @bind-Value=@voitureViewModel.GroupeViewModel
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        Style="width:100%"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        TextProperty="Nom">
+                        </RadzenDropDown>
+                    </p>
+
+                    @if (voitureViewModel.GroupeViewModel != null)
+                                {
+                    <p>
+                        <MatTextField Label="Valeur voiture (en $)" @bind-Value="@voitureViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurVoiture" FullWidth="true" />
+                        <ValidationMessage For="@(() => voitureViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurVoiture)" />
+                    </p>
+                                }
+
+                            }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            @onclick="() => OnConfirmationChange(false)">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        Valider
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+    }
+
+<AuthorizeView Roles="Utilisateur, Administrateur">
+    <MatButton Icon="create" Raised="true" Class="mb-3 float-right" @onclick="((x) => ToggleEdit())">Editer</MatButton>
+</AuthorizeView>
+
+<BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" @ref="Table" TableItem="VoiturePersonneViewModel" Items="voiturePersonneViewModel" PageSize="12">
+    <BlazorTable.Column TableItem="VoiturePersonneViewModel" Title="Demandeur" Field="@(x => x.PersonneViewModel)" Sortable="true" Filterable="true" Width="20%" />
+    <BlazorTable.Column TableItem="VoiturePersonneViewModel" Title="Voiture" Field="@(x => x.TypeVoiture)" Sortable="true" Filterable="true" Width="20%">
+        <EditTemplate>
+            <RadzenDropDown Data=@customVoitureNameDataVirtualization
+                            LoadData=@LoadDataVirtualization
+                            @bind-Value=@context.TypeVoiture
+                            AllowVirtualization="true"
+                            Count=@count
+                            TValue="String"
+                            AllowClear="true"
+                            AllowFiltering="true"
+                            Style="width:100%"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+            </RadzenDropDown>
+        </EditTemplate>
+    </BlazorTable.Column>
+    <AuthorizeView Roles="Administrateur" Context="isUserAdmin">
+        <Authorized>
+            <BlazorTable.Column TableItem="VoiturePersonneViewModel" Title="Actions" Width="5%">
+                <Template Context="tableContext">
+                    <MatIconButton Class="matIconButton p-0" Style="width: 24px;height: 24px;" Icon="check" @onclick="@(() => RedirectToValid(tableContext))"></MatIconButton>
+                </Template>
+            </BlazorTable.Column>
+        </Authorized>
+    </AuthorizeView>
+    <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+</BlazorTable.Table>
+}
+
+@code {
+    private VoitureGta[] voitureList;
+    private IEnumerable<string> voitureNameList;
+    private VoiturePersonneViewModel[] voiturePersonneViewModel;
+    private ITable<VoiturePersonneViewModel> Table;
+    private VoiturePersonneViewModel voiturePersonneViewModelValid;
+    private bool ShowValid;
+
+    private VoitureViewModel voitureViewModel;
+
+    private List<GroupeViewModel> groupeViewModelList = new List<GroupeViewModel>();
+    private List<PersonneViewModel> personneViewModelList = new List<PersonneViewModel>();
+
+    int count;
+    IEnumerable<string> customVoitureNameDataVirtualization;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitleTransactionIndex);
+
+        voiturePersonneViewModel = await VoiturePersonneService.GetAllAsync();
+        voiturePersonneViewModel = voiturePersonneViewModel.OrderBy(v => string.IsNullOrWhiteSpace(v.TypeVoiture)).ThenBy(v => v.TypeVoiture).Distinct().ToArray();
+
+        foreach (var vvm in voiturePersonneViewModel)
+        {
+            vvm.TypeVoitureEvent += Change;
+        }
+        string jsonString = await Http.GetStringAsync("vehicles.json");
+        voitureList = JsonConvert.DeserializeObject<VoitureGta[]>(jsonString);
+        voitureNameList = voitureList.Select(v => v.DisplayName).Distinct().ToArray();
+        StartTimer();
+
+        groupeViewModelList = (await GroupeService.GetAllWithTauxAsync()).ToList();
+        personneViewModelList = (await PersonneService.GetAllWithTauxAsync()).ToList();
+    }
+
+    private void ToggleEdit()
+    {
+        Table.ToggleEditMode();
+    }
+
+    private void Change(object model, TypeVoitureEventArgs e)
+    {
+        if (model is VoiturePersonneViewModel vvm)
+        {
+            VoiturePersonneService.AddOrUpdateAsync(vvm);
+        }
+
+    }
+
+    private class VoitureGta
+    {
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+
+        public override string ToString()
+        {
+            return DisplayName;
+        }
+    }
+
+
+    private static System.Timers.Timer aTimer;
+
+    public void StartTimer()
+    {
+        aTimer = new System.Timers.Timer(1000);
+        aTimer.Elapsed += CountDownTimer;
+        aTimer.Enabled = true;
+    }
+
+    public async void CountDownTimer(Object source, System.Timers.ElapsedEventArgs e)
+    {
+        var reloadVoitureViewModel = await VoiturePersonneService.GetAllAsync();
+        bool diff = false;
+
+        foreach (VoiturePersonneViewModel vvm in reloadVoitureViewModel)
+        {
+            var actuallVvm = voiturePersonneViewModel.First(v => v.Id == vvm.Id);
+            if (vvm.TypeVoiture != actuallVvm.TypeVoiture)
+            {
+                diff = true;
+            }
+        }
+
+        if (diff)
+        {
+            foreach (var vvm in voiturePersonneViewModel)
+            {
+                vvm.TypeVoitureEvent -= Change;
+            }
+            voiturePersonneViewModel = reloadVoitureViewModel.OrderBy(v => string.IsNullOrWhiteSpace(v.TypeVoiture)).ThenBy(v => v.TypeVoiture).ToArray();
+            foreach (var vvm in voiturePersonneViewModel)
+            {
+                vvm.TypeVoitureEvent += Change;
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    void LoadDataVirtualization(LoadDataArgs args)
+    {
+        var query = voitureNameList;
+
+        if (!string.IsNullOrEmpty(args.Filter))
+        {
+            query = query.Where(c => c != null && c.ToLower().Contains(args.Filter.ToLower()));
+        }
+
+        count = query.Count();
+
+        customVoitureNameDataVirtualization = query.Skip(args.Skip.Value).Take(args.Top.Value).ToList();
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected void RedirectToValid(VoiturePersonneViewModel viewModel)
+    {
+        voitureViewModel = new VoitureViewModel();
+        voiturePersonneViewModelValid = viewModel;
+        ShowValid = true;
+    }
+
+    protected async Task OnConfirmationChange(bool value)
+    {
+        ShowValid = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        voitureViewModel.Nb = 1;
+        voitureViewModel.Date = DateTime.Now;
+        Task.Run(async () => await VoitureService.AddOrUpdateAsync(voitureViewModel)).Wait();
+        ShowValid = false;
+        voiturePersonneViewModelValid.TypeVoiture = null;
+        await VoiturePersonneService.AddOrUpdateAsync(voiturePersonneViewModelValid);
+    }
+}

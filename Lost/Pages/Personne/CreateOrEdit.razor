@@ -1,0 +1,111 @@
+﻿@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.PersonneCreateOrEdit)]
+@attribute [Microsoft.AspNetCore.Components.RouteAttribute(ConstantsUrl.PersonneCreateOrEdit + "/{Id:long}")]
+
+@inject IPersonneService PersonneService
+@inject IGroupeService GroupeService
+@inject NavigationManager NavManager
+@inject IJSRuntime jsRuntime
+@inject NotifierTitleService NotifierTitle
+
+<div class="box-create">
+    <EditForm Model="@personneViewModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="mat-layout-grid">
+            <div class="mat-layout-grid-inner">
+                <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+
+                    <p>
+                        <MatTextField Label="Nom" @bind-Value="@personneViewModel.Nom" FullWidth="true" />
+                        <ValidationMessage For="@(() => personneViewModel.Nom)" />
+                    </p>
+                    <p>
+                        <MatTextField Label="Telephone" @bind-Value="@personneViewModel.Tel" FullWidth="true" />
+                        <ValidationMessage For="@(() => personneViewModel.Tel)" />
+                    </p>
+                    <p>
+                        <MatTextField Label="Adresse" @bind-Value="@personneViewModel.Adresse" FullWidth="true" />
+                        <ValidationMessage For="@(() => personneViewModel.Adresse)" />
+                    </p>
+                    <p>
+                        <MatTextField Label="Commentaire" @bind-Value="@personneViewModel.Commentaire" FullWidth="true" />
+                        <ValidationMessage For="@(() => personneViewModel.Commentaire)" />
+                    </p>
+
+                    <p>
+                        <MatBlazor.MatCheckbox Label="Est une petite main" @bind-Value="@personneViewModel.IsPetiteMain" Style="display: table-cell; vertical-align: middle;" FullWidth="true" />
+                    </p>
+
+                    @if (personneViewModel.IsPetiteMain)
+                    {
+                        <p>
+                            <MatTextField Label="Valeur billet (en %)" @bind-Value="@personneViewModel.TauxBlanchimentViewModel.ValeurBillet" FullWidth="true" />
+                            <ValidationMessage For="@(() => personneViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurBillet)" />
+                        </p>
+                        <p>
+                            <MatTextField Label="Valeur sac (en $)" @bind-Value="@personneViewModel.TauxBlanchimentViewModel.ValeurSac" FullWidth="true" />
+                            <ValidationMessage For="@(() => personneViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurSac)" />
+                        </p>
+                        <p>
+                            <MatTextField Label="Valeur voiture (en $)" @bind-Value="@personneViewModel.TauxBlanchimentViewModel.ValeurVoiture" FullWidth="true" />
+                            <ValidationMessage For="@(() => personneViewModel.GroupeViewModel.TauxBlanchimentViewModel.ValeurVoiture)" />
+                        </p>
+                    }
+                    else
+                    {
+                        <p>
+                            <div class="title-dropdown">Groupe</div>
+                            <RadzenDropDown Data="groupeViewModelList"
+                                            @bind-Value=@personneViewModel.GroupeViewModel
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            Style="width:100%"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            TextProperty="Nom">
+                            </RadzenDropDown>
+
+                            <ValidationMessage For="@(() => personneViewModel.GroupeViewModel)" />
+                        </p>
+                    }
+
+                    <MatButton Class="save" Type="submit" Raised="true" Icon="done">Valider</MatButton>
+                    <MatButton Class="cancel" Type="button" Outlined="true" OnClick="@Cancel" Icon="clear">Annuler</MatButton>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    private PersonneViewModel personneViewModel = new PersonneViewModel();
+
+    private List<GroupeViewModel> groupeViewModelList = new List<GroupeViewModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifierTitle.Update(Lost.SharedLib.Constants.TitlePersonneCreateOrEdit);
+
+        if (Id > 0)
+        {
+            personneViewModel = await PersonneService.GetAsync(Id);
+        }
+
+        groupeViewModelList = (await GroupeService.GetAllAsync()).ToList();
+    }
+
+
+    private void HandleValidSubmit()
+    { 
+        Task.Run(async () => await PersonneService.AddOrUpdateAsync(personneViewModel)).Wait();
+
+        NavManager.NavigateTo(ConstantsUrl.PersonneIndex);
+
+    }
+
+    public void Cancel()
+    {
+        NavManager.NavigateTo(ConstantsUrl.PersonneIndex);
+    }
+}
