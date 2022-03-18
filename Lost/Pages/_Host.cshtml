@@ -25,7 +25,7 @@
     <script src="_content/BlazorTable/BlazorTable.min.js"></script>
     <script src="_content/MatBlazor/dist/matBlazor.js"></script>
     <script src="css/font-awesome/js/all.min.js"></script>
-
+    <script src="jquery-3.6.0.min.js"></script>
     <script>
         (function start() {
             Blazor.start({
@@ -33,6 +33,26 @@
                 configureSignalR: builder => builder.configureLogging("debug") // LogLevel.Debug
             });
         })()
+
+        function setVolume() {
+            var myAudio = document.getElementById("audio1");
+            myAudio.volume = 0.05; //Changed this to 0.5 or 50% volume since the function is called Set Half Volume ;)
+        }
+
+        function start() {
+            var myAudio = document.getElementById("audio1");
+            myAudio.play();
+        }
+
+        function stop() {
+            var myAudio = document.getElementById("audio1");
+            myAudio.pause();
+            myAudio.currentTime = 0;
+        }
     </script>
+
+
+
+
 </body>
 </html>

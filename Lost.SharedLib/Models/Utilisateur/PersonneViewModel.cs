@@ -11,8 +11,6 @@ namespace Lost.SharedLib
 
         public string Commentaire { get; set; }
 
-        public string Adresse { get; set; }
-        
         [CustomValidation(typeof(PersonneViewModel), nameof(ValidateTelPersonne))]
         public string Tel { get; set; }
 

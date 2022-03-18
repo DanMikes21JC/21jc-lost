@@ -11,16 +11,16 @@
 
 @if (ShowBackdrop)
 {
-<div class="modal-backdrop fade show" @onkeyup="KeyboardEventHandler"></div>
+    <div class="modal-backdrop fade show" onclick=""></div>
 }
 
-<div class="imgbox" @onkeyup="KeyboardEventHandler">
+<div class="imgbox">
     <img src="img/Teller.jpg" class="center-fit" />
 </div>
 
-<img @onkeyup="KeyboardEventHandler" src="https://img.youtube.com/vi/9YffrCViTVk/maxresdefault.jpg" style="position:absolute;width:200px;top:5px;left:5px;" @onclick="@Show" />
+<img src="https://img.youtube.com/vi/9YffrCViTVk/maxresdefault.jpg" style="position:absolute;width:200px;top:5px;left:5px;" @onclick="@Show" />
 
-<audio @onkeyup="KeyboardEventHandler" id="audio1" name="Teller" src="/music/Teller.mp3" loop autoplay onloadeddata="setVolume()" />
+<audio id="audio1" name="Teller" src="/music/Teller.mp3" loop autoplay onloadeddata="setVolume()" />
 
 
 @code{
@@ -47,7 +47,7 @@
     {
         Open();
         await JS.InvokeVoidAsync("stop");
-        StartSong();
+
     }
 
 
@@ -63,12 +63,6 @@
     protected override void OnInitialized()
     {
         NotifierTitle.Notify += OnNotify;
-    }
-
-    private async Task StartSong()
-    {
-        await Task.Delay(2000);
-        await JS.InvokeVoidAsync("stop");
     }
 
     public Guid Guid = Guid.NewGuid();

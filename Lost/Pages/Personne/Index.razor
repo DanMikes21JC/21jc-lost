@@ -22,7 +22,6 @@ else
     <BlazorTable.Table class="table table-dark" TableHeadClass="thead-dark" TableItem="PersonneViewModel" Items="personneViewModel" PageSize="12">
         <BlazorTable.Column TableItem="PersonneViewModel" Title="Nom" Field="@(x => x.Nom)" Sortable="true" Filterable="true" Width="20%" />
         <BlazorTable.Column TableItem="PersonneViewModel" Title="Tel" Field="@(x => x.Tel)" Sortable="true" Filterable="true" Width="20%" />
-        <BlazorTable.Column TableItem="PersonneViewModel" Title="Adresse" Field="@(x => x.Adresse)" Sortable="true" Filterable="true" Width="20%" />
         <BlazorTable.Column TableItem="PersonneViewModel" Title="Commentaire" Field="@(x => x.Commentaire)" Sortable="true" Filterable="true" Width="20%" />
         <BlazorTable.Column TableItem="PersonneViewModel" Title="Groupe" Field="@(x => x.GroupeViewModel.Nom)" Sortable="true" Filterable="true" Width="20%" />
         <BlazorTable.Column TableItem="PersonneViewModel" Title="Actions" Width="10%">
@@ -89,6 +88,6 @@ else
     protected void OnChange(string value, string name)
     {
         value = value.ToLower();
-        personneViewModel = allPersonneViewModel.Where(p => (p.Nom != null && p.Nom.ToLower().Contains(value)) || (p.Adresse != null && p.Adresse.ToLower().Contains(value)) || (p.Commentaire != null && p.Commentaire.ToLower().Contains(value)) || (p.Tel != null && p.Tel.ToLower().Contains(value)) || (p.GroupeViewModel != null && p.GroupeViewModel?.Nom != null && p.GroupeViewModel.Nom.ToLower().Contains(value))).ToArray();
+        personneViewModel = allPersonneViewModel.Where(p => p.Nom.ToLower().Contains(value) || p.Commentaire.ToLower().Contains(value) || p.Tel.ToLower().Contains(value) || (p.GroupeViewModel?.Nom != null && p.GroupeViewModel.Nom.ToLower().Contains(value))).ToArray();
     }
 }

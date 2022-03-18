@@ -10,9 +10,6 @@ namespace Lost.Model
         [Column("commentaire")]
         public string Commentaire { get; set; }
 
-        [Column("adresse")]
-        public string Adresse { get; set; }
-
         [Column("tel")]
         public string Tel { get; set; }
 
